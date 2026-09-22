@@ -1,94 +1,92 @@
-# simple-agent
+# Apartment Finder Agent 🏙️✨
 
-Simple ReAct agent
-Agent generated with `agents-cli` version `1.1.0`
+An AI-powered conversational housing assistant built with the **Google Agent Development Kit (ADK)**, **Vertex AI**, and **Agent Platform**. Apartment Finder helps renters search, evaluate, compare, and visualize rental properties with structured A2UI cards and automated move-in cost calculations.
 
-## Project Structure
-
-```
-simple-agent/
-├── app/         # Core agent code
-│   ├── agent.py               # Main agent logic
-│   ├── fast_api_app.py        # FastAPI Backend server
-│   └── app_utils/             # App utilities and helpers
-├── tests/                     # Unit, integration, and load tests
-├── GEMINI.md                  # AI-assisted development guide
-└── pyproject.toml             # Project dependencies
-```
-
-> 💡 **Tip:** Use [Antigravity CLI](https://antigravity.google/) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
-
-## Requirements
-
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **agents-cli**: Agents CLI - Install with `uv tool install google-agents-cli`
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-
-
-## Quick Start
-
-Install `agents-cli` and its skills if not already installed:
-
-```bash
-uvx google-agents-cli setup
-```
-
-Install required packages:
-
-```bash
-agents-cli install
-```
-
-Test the agent with a local web server:
-
-```bash
-agents-cli playground
-```
-
-You can also use features from the [ADK](https://adk.dev/) CLI with `uv run adk`.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `agents-cli install` | Install dependencies using uv                                                         |
-| `agents-cli playground` | Launch local development environment                                                  |
-| `agents-cli lint`    | Run code quality checks                                                               |
-| `agents-cli eval`    | Evaluate agent behavior (generate, grade, analyze, and more — see `agents-cli eval --help`) |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests                                                        |
-| `agents-cli deploy`  | Deploy agent to Agent Runtime                                                                |
-| `agents-cli publish gemini-enterprise` | Register deployed agent to Gemini Enterprise                    || [A2A Inspector](https://github.com/a2aproject/a2a-inspector) | Launch A2A Protocol Inspector                                                        |
-
-## 🛠️ Project Management
-
-| Command | What It Does |
-|---------|--------------|
-| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
-| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
-| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customizations |
+![Apartment Finder Agent Demo](./demo.gif)
 
 ---
 
-## Development
+## 🌟 Capabilities & Architecture
 
-Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - it auto-reloads on save.
+Based strictly on the codebase implementation (`app/`, `frontend/`, `agents-cli-manifest.yaml`), the agent integrates the following core capabilities and Google Cloud services:
 
-## Deployment
+- **🔥 Google Cloud Firestore Integration**: Direct database queries against the `apartments` collection for real-time listing lookups, filtering by neighborhood, budget, bedrooms, and pet policies.
+- **🖼️ Gemini Image Generation & GCS Storage**: Generates property visualizations using the `gemini-3.1-flash-lite-image` model in Vertex AI (`global` region), saving outputs as agent artifacts and hosting them on Google Cloud Storage (`gs://apartment-finder-assets-*`).
+- **🧮 Agent Platform Sandbox Code Execution**: Uses `AgentEngineSandboxCodeExecutor` to safely execute Python code in isolated sandboxes to compute itemized move-in costs (first month's rent + security deposit + administrative fees).
+- **📚 Vertex AI RAG Corpus Retrieval**: Grounded answers on tenant rights and leasing guidelines retrieved directly from a serverless Vertex AI RAG corpus.
+- **🎨 A2UI 0.8 Rich Card Rendering**: Powered by `a2ui-agent-sdk` (version 0.8 schema and Basic Catalog) via an `after_model_callback` to format responses into interactive visual cards.
+- **🧠 ADK Memory Bank**: Persists user preferences, search criteria, and move-in constraints across conversational turns.
+- **🌐 Public API Integration**: Integrated `PublicApisSearchTool` to fetch public housing and community data.
 
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: Google Agent Development Kit (ADK)
+- **Models**: Gemini 2.5 / Gemini 3.1 Flash Lite Image
+- **Database & Storage**: Google Cloud Firestore, Google Cloud Storage (GCS)
+- **Knowledge Base**: Vertex AI Serverless RAG Engine
+- **Code Execution**: Agent Engine Sandbox Code Executor
+- **UI & Proxy**: FastAPI backend proxy (`a2a-sdk`), HTML5/CSS3 plain chat frontend with A2UI card renderer
+
+---
+
+## 🚀 Local Setup & Running Instructions
+
+### Prerequisites
+- Python 3.10+ and [`uv`](https://github.com/astral-sh/uv) package manager
+- Authenticated Google Cloud SDK (`gcloud auth application-default login`)
+
+### 1. Clone & Set Up Environment
 ```bash
-gcloud config set project <your-project-id>
+git clone https://github.com/lokender88/buildwithgemini-apartment-finder.git
+cd buildwithgemini-apartment-finder
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+### 2. Seed Firestore Database (Optional)
+```bash
+python seed_firestore.py
+```
+
+### 3. Run Agent Locally via ADK CLI
+```bash
+agents-cli run --mode a2a
+```
+
+### 4. Run Frontend Proxy & Web Interface Locally
+Navigating to the `frontend/` folder, install requirements, and start the FastAPI proxy server:
+```bash
+cd frontend
+uv pip install -r requirements.txt
+export AGENT_ENGINE_RESOURCE_NAME="<your-reasoning-engine-resource-name>"
+export AGENT_DIRECTORY="app"
+uv run python main.py
+```
+*The local chat web interface will be accessible locally on port 8080.*
+
+---
+
+## ☁️ Deployment
+
+### Deploying the Agent to Agent Platform
+```bash
 agents-cli deploy
 ```
 
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
+### Deploying the Frontend Proxy to Cloud Run
+```bash
+cd frontend
+gcloud run deploy apartment-finder-frontend \
+    --source . \
+    --region us-central1 \
+    --allow-unauthenticated \
+    --set-env-vars AGENT_ENGINE_RESOURCE_NAME="<your-reasoning-engine-resource-name>",AGENT_DIRECTORY="app"
+```
 
-## Observability
+---
 
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
-
-## A2A Inspector
-
-This agent supports the [A2A Protocol](https://a2a-protocol.org/). Use the [A2A Inspector](https://github.com/a2aproject/a2a-inspector) to test interoperability.
-See the [A2A Inspector docs](https://github.com/a2aproject/a2a-inspector) for details.
+## 📄 License
+Apache-2.0 License
